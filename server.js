@@ -74,7 +74,7 @@ app.post("/create-payment-intent", async (req, res) => {
 });
 
 app.get("/domain-availability", async (req, res) => {
-  const domain = req.query.domain;
+  const domain = req.query.domain.toLowerCase();
 
   if (!domain) {
     return res.status(400).json({ error: "Domain name is required" });
