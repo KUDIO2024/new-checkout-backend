@@ -62,9 +62,12 @@ app.post("/create-payment-intent", async (req, res) => {
     console.log(paymentIntent);
 
     if (paymentIntent.status === "requires_action") {
-      res.json({ clientSecret: paymentIntent.client_secret });
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        transactionId: paymentIntent.id,
+      });
     } else if (paymentIntent.status === "succeeded") {
-      res.json({ payment_succeed: true });
+      res.json({ payment_succeed: true, transactionId: paymentIntent.id });
     } else {
       res.json({ error: "Payment intent failed." });
     }
