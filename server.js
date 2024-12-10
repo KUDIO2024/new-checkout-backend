@@ -140,12 +140,10 @@ app.post("/register-domain", async (req, res) => {
   const registerCustomerResponse = await registerCustomer(registrantData);
   if (registerCustomerResponse.status) {
     customerId = registerCustomerResponse.data.id;
+    const response = await registerDomain(domain, emailPlan, customerId);
+    console.log("===========> register status and error ", response);
+    res.json({ response, customerId });
   }
-
-  const response = await registerDomain(domain, emailPlan, customerId);
-
-  console.log("===========> register status and error ", response);
-  res.json({ response, customerId });
 });
 
 async function registerDomain(domain, emailPlan, customerId) {
@@ -185,63 +183,60 @@ async function registerDomain(domain, emailPlan, customerId) {
       }),
     });
     const domainData = await domainResponse.json();
+    if (
+      domainData.status &&
+      (domainData.data.status_id == 1 || domainData.data.status_id == 2)
+    ) {
+      if (!plan_id) return { status: true, error: "" };
 
-    if (domainData.status && plan_id) {
-      if (domainData.data.status_id == 1 || domainData.data.status_id == 2) {
-        const new_requestId = generateRequestID();
-        const new_signature = generateSignature(new_requestId, apiKey);
-        try {
-          const emailHostingResponse = await fetch(emailHostingUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              accept: "application/json",
-              "Api-Request-Id": new_requestId,
-              "Api-Signature": new_signature,
-            },
-            body: JSON.stringify({
-              domain_name: domain,
-              plan_id: plan_id,
-              customer_id: customerId,
-              period: 12,
-            }),
-          });
-          const emailHostingData = await emailHostingResponse.json();
+      const new_requestId = generateRequestID();
+      const new_signature = generateSignature(new_requestId, apiKey);
+      try {
+        const emailHostingResponse = await fetch(emailHostingUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            accept: "application/json",
+            "Api-Request-Id": new_requestId,
+            "Api-Signature": new_signature,
+          },
+          body: JSON.stringify({
+            domain_name: domain,
+            plan_id: plan_id,
+            customer_id: customerId,
+            period: 12,
+          }),
+        });
+        const emailHostingData = await emailHostingResponse.json();
 
-          if (emailHostingData.status === true) {
-            if (
-              emailHostingData.data.status_id == 1 ||
-              emailHostingData.data.status_id == 2
-            ) {
-              return { status: true, error: "" };
-            } else
-              return {
-                status: false,
-                error:
-                  "Succeeded to register domain but Failed to register email hosting. Please confirm if you provide right information.",
-              };
+        if (emailHostingData.status === true) {
+          if (
+            emailHostingData.data.status_id == 1 ||
+            emailHostingData.data.status_id == 2
+          ) {
+            return { status: true, error: "" };
           } else
             return {
               status: false,
               error:
-                "Succeeded to register domain but Failed to register email hosting. " +
-                emailHostingData.error_message,
+                "Succeeded to register domain but Failed to register email hosting. Please confirm if you provide right information.",
             };
-        } catch (error) {
-          console.error("Error registering email hosting:", error);
+        } else
           return {
             status: false,
             error:
-              "Succeeded to register domain but Failed to register email hosting.",
+              "Succeeded to register domain but Failed to register email hosting. " +
+              emailHostingData.error_message,
           };
-        }
-      } else {
+      } catch (error) {
+        console.error("Error registering email hosting:", error);
         return {
           status: false,
-          error: "An error occured in registering domain and email hosting",
+          error:
+            "Succeeded to register domain but Failed to register email hosting.",
         };
       }
-    } else if (domainData.status === false) {
+    } else {
       return {
         status: false,
         error:
