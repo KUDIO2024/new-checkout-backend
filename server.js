@@ -45,7 +45,7 @@ function generateSignature(requestId, apiKey) {
 
 app.post("/create-payment-intent", async (req, res) => {
   // const totalPrice = req.body.totalPrice;
-  const totalPrice = totalPrice;
+  const totalPrice = req.body.totalPrice;
   console.log(req.body);
   try {
     const paymentIntent = await stripeInstance.paymentIntents.create({
