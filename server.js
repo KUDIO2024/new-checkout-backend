@@ -2,7 +2,6 @@ const express = require("express");
 const dotenv = require("dotenv");
 const stripe = require("stripe");
 const crypto = require("crypto");
-const fetch = require("node-fetch");
 
 dotenv.config();
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -45,6 +44,7 @@ function generateSignature(requestId, apiKey) {
 }
 
 app.post("/create-payment-intent", async (req, res) => {
+  // const totalPrice = req.body.totalPrice;
   const totalPrice = req.body.totalPrice;
   console.log(req.body);
   try {
@@ -85,11 +85,14 @@ app.get("/domain-availability", async (req, res) => {
   }
 
   try {
+    console.log("start");
     const domainName = domain.split(".")[0];
     const requestId = generateRequestID();
     const signature = generateSignature(requestId, apiKey);
+    console.log(requestId, signature);
 
-    let url = `${constants.urls.domainAvailability}?`;
+    let url = constants.urls.domainAvailability + "?";
+
     const domainQueries = domainTypes.map(
       (type) => `domain_names[]=${domainName}.${type}`
     );
@@ -106,20 +109,15 @@ app.get("/domain-availability", async (req, res) => {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch domain availability: ${response.status} ${response.statusText}`
-      );
-    }
-
     const data = await response.json();
+    console.log(data);
+
     if (data && Array.isArray(data.data)) {
       res.status(200).json({ data: data.data });
     } else {
       res.status(200).json({ data: [] });
     }
   } catch (error) {
-    console.error("Error fetching domain availability:", error);
     res.status(500).json({ error: "Failed to fetch domain availability" });
   }
 });
@@ -284,6 +282,7 @@ async function registerCustomer(registrantData) {
       );
       return customerResult;
     } else {
+      // throw new Error(customerResult.error_message);
       console.log(
         "============> Customer registration failed ",
         customerResult
